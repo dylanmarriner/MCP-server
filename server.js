@@ -28,6 +28,15 @@ server.registerTool(
       path: z.string(),
       content: z.string(),
       plan: z.string(),
+      // Optional metadata for auto-header generation
+      role: z.enum(["EXECUTABLE", "BOUNDARY", "INFRASTRUCTURE", "VERIFICATION"]).optional(),
+      purpose: z.string().optional(),
+      usedBy: z.string().optional(),
+      connectedVia: z.string().optional(),
+      registeredIn: z.string().optional(),
+      executedVia: z.string().optional(),
+      failureModes: z.string().optional(),
+      authority: z.string().optional(),
     }),
   },
   writeFileHandler
@@ -37,7 +46,9 @@ server.registerTool(
   "list_plans",
   {
     description: "List approved plans",
-    inputSchema: z.object({}),
+    inputSchema: z.object({
+      path: z.string(),
+    }),
   },
   listPlansHandler
 );

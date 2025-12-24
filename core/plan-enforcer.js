@@ -1,24 +1,35 @@
-import { loadPlan } from "./plan-registry.js";
+import fs from "fs";
+import path from "path";
+import { resolveRepoRoot } from "./repo-resolver.js";
 
-function pathMatchesScope(filePath, scopePattern) {
-  if (scopePattern.endsWith("/**")) {
-    const base = scopePattern.replace("/**", "");
-    return filePath.startsWith(base);
+/**
+ * Enforce that a plan exists in the repo governing the target path.
+ */
+export function enforcePlan(planName, targetPath) {
+  if (!planName) {
+    throw new Error("PLAN_NAME_REQUIRED");
   }
 
-  return filePath === scopePattern;
-}
+  const repoRoot = resolveRepoRoot(targetPath);
+  const plansDir = path.join(repoRoot, "docs", "plans");
 
-export function enforcePlan(planId, filePath) {
-  const plan = loadPlan(planId);
+  // Normalize: get basename to strip paths (e.g. docs/plans/Foo.md -> Foo.md)
+  // then strip .md extension if present
+  const baseName = path.basename(planName);
+  const normalizedPlanName = baseName.endsWith(".md")
+    ? baseName.slice(0, -3)
+    : baseName;
 
-  for (const scope of plan.scope) {
-    if (pathMatchesScope(filePath, scope)) {
-      return;
-    }
+  const planFile = path.join(plansDir, `${normalizedPlanName}.md`);
+
+  if (!fs.existsSync(planFile)) {
+    throw new Error(
+      `PLAN_NOT_APPROVED: ${planName} not found in ${plansDir}`
+    );
   }
 
-  throw new Error(
-    `PLAN_SCOPE_VIOLATION: ${filePath} not permitted by plan ${planId}`
-  );
+  return {
+    repoRoot,
+    plan: normalizedPlanName,
+  };
 }
